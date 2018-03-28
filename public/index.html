@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Welcome to Firebase Hosting</title>
+    <script src="https://code.jquery.com/jquery-3.3.1.min.js"
+      integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8="
+      crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/handlebars.js/4.0.11/handlebars.min.js"></script>
+    <!-- update the version number as needed -->
+    <script defer src="/__/firebase/4.12.0/firebase-app.js"></script>
+    <!-- include only the Firebase features as you need -->
+    <script defer src="/__/firebase/4.12.0/firebase-auth.js"></script>
+    <script defer src="/__/firebase/4.12.0/firebase-database.js"></script>
+    <script defer src="/__/firebase/4.12.0/firebase-messaging.js"></script>
+    <script defer src="/__/firebase/4.12.0/firebase-storage.js"></script>
+    <!-- initialize the SDK after all desired features are loaded -->
+    <script defer src="/__/firebase/init.js"></script>
+    <link rel="stylesheet" href="/css/style.css">
+  </head>
+  <body>
+    <form class="auth">
+      <div>
+        <label for="email">Email: </label>
+        <br>
+        <input type="email" id="email">
+      </div>
+      <div>
+        <label for="password">Password: </label>
+        <br>
+        <input type="password" id="password">
+      </div>
+      <button type="button" id="loginbtn">Login</button>
+      <button type="button" id="signinbtn">Sign Up</button>
+      <br>
+      <button type="button"id="logout">Logout</button>
+    </form>
+    <div class="messages">
+
+    </div>
+    <form>
+      <label for="textFiled">Enter text: </label>
+      <input type="text" id="textFiled">
+      <button type="button" id="sendbtn">Send</button>
+    </form>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      var messagesRef = firebase.database().ref('messages');
+
+      var messageSource   = document.getElementById("message-template").innerHTML;
+      var messageTemplate = Handlebars.compile(messageSource);
+
+      // messagesRef.once('value', function(snapshot) {
+      //   snapshot.forEach(function(childSnapshot) {
+      //     var childData = childSnapshot.val();
+      //     console.log(childData);
+      //     var mess = messageTemplate(childData);
+      //     $(".messages").append(mess);
+      //   });
+      // });
+
+      function addListerners(){
+        messagesRef.on('child_added', function(data) {
+          // addCommentElement(postElement, data.key, data.val().text, data.val().author);
+          console.log("child_added");
+          console.log(data.val());
+          var model = Object.assign({}, data.val(), {id:data.key});
+          var mess = messageTemplate(model);
+          $(".messages").append(mess);
+        });
+        messagesRef.on('child_removed', function(data) {
+          $(".entry[data-msg-id="+data.key+"]").remove();
+        });
+
+        $(".messages").on("click", ".removebtn", function (e) {
+          let dataId = $(e.target).parents(".entry").data("msg-id")
+          console.log(e.target, dataId);
+          var messageRef = firebase.database().ref('messages/' + dataId);
+          messageRef.remove();
+        })
+      }
+      addListerners();
+    });
+    $("#sendbtn").on("click", function(){
+      let msg = $("#textFiled").val();
+      // $.ajax({
+      //   url: "https://us-central1-messanger-smalltolk.cloudfunctions.net/addMessage",
+      //   method: "GET",
+      //   data: "text="+msg,
+      //   success: function (response) {
+      //     alert(response);
+      //     $("#textFiled").val("")
+      //   }
+      // })
+      firebase.database().ref('messages').push({
+        message: msg
+      });
+      $("#textFiled").val("");
+    })
+    $("#signinbtn").on("click", function(){
+      let email = $("#email").val();
+      let password = $("#password").val();
+
+      firebase.auth().createUserWithEmailAndPassword(email, password).then(function (response) {
+        $("#email").val("");
+        $("#password").val("");
+        alert("Sign Up");
+        return response;
+      }).catch(function(error) {
+        // Handle Errors here.
+        var errorCode = error.code;
+        var errorMessage = error.message;
+        // [START_EXCLUDE]
+        if (errorCode == 'auth/weak-password') {
+          alert('The password is too weak.');
+        } else {
+          alert(errorMessage);
+        }
+        console.log(error);
+        // [END_EXCLUDE]
+      })
+    });
+    $("#loginbtn").on("click", function(){
+      let email = $("#email").val();
+      let password = $("#password").val();
+      firebase.auth().signInWithEmailAndPassword(email, password).then(function (response) {
+        $("#email").val("");
+        $("#password").val("");
+        alert("Login");
+        return response;
+      }).catch(function(error) {
+        // Handle Errors here.
+        console.log(error);
+        var errorCode = error.code;
+        var errorMessage = error.message;
+        // ...
+      });
+    });
+    $("#logout").on("click", function(){
+      firebase.auth().signOut().then(function() {
+        alert("LogOut");
+      }).catch(function(error) {
+        // An error happened.
+      });
+    })
+
+    </script>
+
+    <script id="message-template" type="text/x-handlebars-template">
+      <div class="entry" data-msg-id="{{id}}">
+        <div class="body">
+          {{message}}
+        </div>
+        <button type="button" class="removebtn">Delete</button>
+      </div>
+    </script>
+  </body>
+</html>

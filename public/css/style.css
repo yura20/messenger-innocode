@@ -1,0 +1,10 @@
+.auth{
+  background: rgba(128,128,128,.5);
+  width: 300px;
+  text-align: center;
+}
+.auth div{
+  height: 50px;
+  line-height: 20px;
+  background: rgba(128,128,128,.5);
+}
